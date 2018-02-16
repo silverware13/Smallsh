@@ -18,6 +18,7 @@
 #include <sys/wait.h>
 
 void userInput(); // Wait and accept user input.
+void 
 
 int main (int argc, char **argvi) {
 
@@ -65,9 +66,22 @@ void userInput() {
 		// Ignore the input if it is a comment or whitespace.
 		if(buffer[0] != '#' && emptyEnter == 0){	
 			
-			// Print user input as a string.
-			printf("%s", buffer);
-
+			// Store user command.
+			char command[50];
+			memset(command, '\0', sizeof(command));
+			scanf(buffer, "%s", command);
+			
+			// React to command.
+			switch(command) {
+			
+			case 'exit' :
+				exit;
+				break;	
+			
+			}
+			
+			default :
+				printf("Unknown command.\n");
 		}
 
 		// Flush stdout. 
