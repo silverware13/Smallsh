@@ -40,7 +40,11 @@ void userInput() {
 	// Stores user command.
 	char command[50];
 	memset(command, '\0', sizeof(command));
-
+	
+	// Stores up to 512 arguments.
+	char arg[512][50];
+	memset(arg, '\0', sizeof(arg[0][0]) * 512 * 50);
+	
 	while(1) {
 	
 		// Show prompt.
@@ -68,14 +72,28 @@ void userInput() {
 	
 		// Ignore the input if it is a comment or whitespace.
 		if(buffer[0] != '#' && emptyEnter == 0){	
-		
+			
+			// Save command and arguments.
+ 			sscanf(buffer, "%s", command);
+			for(int i = 0; sscanf(buffer, "%s",  arg[i]) == 1; i++ ){};	
+
+			printf("%s %s %s %s %s", command, arg[1], arg[2], arg[3], arg[4]);
+			
 			// React to command.
-			sscanf(buffer, "%s", command);	
 			if(strcmp(command,"exit") == 0){
+				// Terminate any process we started.
+				exit(0);
+			} else if(strcmp(command,"exit") == 0){
+				exit(0);
+			} else if(strcmp(command,"cd") == 0){
+				cd test;
+				//exit(0);
+			} else if(strcmp(command,"status") == 0){
 				exit(0);
 			} else {
 				printf("%s: command not found.\n", command);
 			}
+
 		}
 
 		// Flush stdout. 
