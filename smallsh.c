@@ -9,7 +9,7 @@
 // Date: 2/14/2018
 //
 
-#include <smallsh.h>
+#include "smallsh.h"
 
 int main (int argc, char **argvi) {
 
