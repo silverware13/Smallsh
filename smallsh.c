@@ -136,10 +136,10 @@ void userInput() {
 				int childExitMethod = -5;
 				
 				// We fork our current process, creating a child.
-				spawnPid = fork();
+				spawnPID = fork();
 
 				// If this current process is the child we execute the given command.
-				switch(spawnPid) {
+				switch(spawnPID) {
 				
 					// If fork fails throw error.	
 					case -1: {
@@ -150,16 +150,16 @@ void userInput() {
 					
 					// This process is the child, execute command.
 					case 0: {
-						execlp(command, command, "-a", NULL); // Execute command.
+						execlp(command, command, NULL, NULL); // Execute command.
 						perror("Execlp failed.\n"); // Only get error if process never executed.
 						exit(2);
-						break	
+						break;	
 					}
 					
 					// This is the parent, wait for child to finish.
 					default: {
-						waitPid(spawnPid, &childExitMethod, 0); // Wait for child.
-						break
+						waitpid(spawnPID, &childExitMethod, 0); // Wait for child.
+						break;
 					}
 							
 				}
