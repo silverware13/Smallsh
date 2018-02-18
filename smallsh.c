@@ -131,7 +131,39 @@ void userInput() {
 
 			// If the user did not enter a built in command we fork the process then execute.
 			} else {
-				printf("%s: Command not found.\n", command);
+				
+				pid_t spawnPID = -5;
+				int childExitMethod = -5;
+				
+				// We fork our current process, creating a child.
+				spawnPid = fork();
+
+				// If this current process is the child we execute the given command.
+				switch(spawnPid) {
+				
+					// If fork fails throw error.	
+					case -1: {
+						perror("Fork failed.\n");
+						exit(1);
+						break;
+					}
+					
+					// This process is the child, execute command.
+					case 0: {
+						execlp(command, command, "-a", NULL); // Execute command.
+						perror("Execlp failed.\n"); // Only get error if process never executed.
+						exit(2);
+						break	
+					}
+					
+					// This is the parent, wait for child to finish.
+					default: {
+						waitPid(spawnPid, &childExitMethod, 0); // Wait for child.
+						break
+					}
+							
+				}
+	 
 			}
 
 		}
