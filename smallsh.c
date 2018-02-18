@@ -9,18 +9,7 @@
 // Date: 2/14/2018
 //
 
-#define _GNU_SOURCE
-#define MAX_CHARS 2048
-#define MAX_ARGS 512
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
-void userInput(); // Wait and accept user input.
+#include <smallsh.h>
 
 int main (int argc, char **argvi) {
 
@@ -150,7 +139,7 @@ void userInput() {
 					
 					// This process is the child, execute command.
 					case 0: {
-						execlp(command, command, NULL, NULL); // Execute command.
+						execlp(command, command, NULL); // Execute command.
 						perror("Execlp failed.\n"); // Only get error if process never executed.
 						exit(2);
 						break;	
