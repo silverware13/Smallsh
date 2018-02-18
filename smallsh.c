@@ -18,6 +18,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 void userInput(); // Wait and accept user input.
 
@@ -84,16 +85,31 @@ void userInput() {
 			
 			// React to command.
 			if(strcmp(command,"exit") == 0){
+
 				// Terminate any process we started.
 				exit(0);
+
 			} else if(strcmp(command,"exit") == 0){
 				exit(0);
 			} else if(strcmp(command,"cd") == 0){
-				exit(0);
+
+				if(strcmp(arg[1],"") == 0){
+					
+					// If cd has no args go to HOME.
+					chdir(getenv("HOME"));				
+
+				} else {
+			
+					// We go to the directory specified. 
+					if(chdir(arg[1]) != 0){
+						printf("%s: No such file or directory.\n", arg[1]);
+					}	
+				}
+
 			} else if(strcmp(command,"status") == 0){
 				exit(0);
 			} else {
-				printf("%s: command not found.\n", command);
+				printf("%s: Command not found.\n", command);
 			}
 
 		}
