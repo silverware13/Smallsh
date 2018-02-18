@@ -83,14 +83,14 @@ void userInput() {
 				bytesConsumed += bytesNow;
 			}	
 			
-			// React to command.
+			// Perform a command based on user input.
+			// Exit the process, terminate any processes we have stared.
 			if(strcmp(command,"exit") == 0){
 
 				// Terminate any process we started.
 				exit(0);
 
-			} else if(strcmp(command,"exit") == 0){
-				exit(0);
+			// Change directory, go to HOME if no arguments defined.
 			} else if(strcmp(command,"cd") == 0){
 
 				if(strcmp(arg[1],"") == 0){
@@ -105,9 +105,31 @@ void userInput() {
 						printf("%s: No such file or directory.\n", arg[1]);
 					}	
 				}
-
+			
+			// Show either the exit status or the terminating signal of the last foreground process. 
 			} else if(strcmp(command,"status") == 0){
-				exit(0);
+				
+				// First check if any child process has exited.
+				pid_t childPID = -5;
+				int childExitMethod = -5; 
+				childPID = waitpid(-1, &childExitMethod, WNOHANG);
+				
+				// Make sure wait did not fail.
+				if(childPID == -1){
+					perror("Wait failed");
+					exit(1);
+				}
+				
+				// Check if exited normally or terminated by signal.	
+				if(WIFEXITED(childExitMethod) != 0) { 
+					int exitStat = WEXITSTATUS(childExitMethod);
+					printf("exit value %d\n", exitStat);	
+				} else {
+					int termSig = WTERMSIG(childExitMethod);
+					printf("terminated by signal %d\n", termSig);
+				}
+
+			// If the user did not enter a built in command we fork the process then execute.
 			} else {
 				printf("%s: Command not found.\n", command);
 			}
