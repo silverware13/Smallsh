@@ -142,9 +142,12 @@ void userInput() {
 					
 					// This process is the child, execute command.
 					case 0: {
-						execlp(command, command, NULL); // Execute command.
-						perror("Execlp failed.\n"); // Only get error if process never executed.
-						exit(2);
+						// Perform any needed input / output redirection.
+						// use dup2()? Don't pass dest/source into the exec.
+						
+						execlp(command, command, arg[1], arg[2], arg[3], arg[4], NULL); // Execute command.
+						perror("Command could not be executed.\n"); // Only get error if process never executed.
+						exit(1);
 						break;	
 					}
 					
