@@ -108,9 +108,13 @@ void userInput() {
 					perror("Wait failed");
 					exit(1);
 				}
-				
+			
+				// No processes have terminated.	
+				if(childPID == 0){
+					printf("No foreground processes have terminated.\n");
+					
 				// Check if exited normally or terminated by signal.	
-				if(WIFEXITED(childExitMethod) != 0) { 
+				} else if(WIFEXITED(childExitMethod) != 0) { 
 					int exitStat = WEXITSTATUS(childExitMethod);
 					printf("exit value %d\n", exitStat);	
 				} else {
