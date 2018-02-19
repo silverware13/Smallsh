@@ -35,6 +35,10 @@ void userInput() {
 	// Stores arguments.
 	char arg[MAX_ARGS][50];
 	
+	// Stores the last child process id and exit.
+	pid_t lastPID = 0;
+	int lastExit = 0;
+	
 	while(1) {
 	
 		// Show prompt.
@@ -98,27 +102,22 @@ void userInput() {
 			// Show either the exit status or the terminating signal of the last foreground process. 
 			} else if(strcmp(command,"status") == 0){
 				
-				// First check if any child process has exited.
-				pid_t childPID = -5;
-				int childExitMethod = -5; 
-				childPID = waitpid(-1, &childExitMethod, WNOHANG);
-				
 				// Make sure wait did not fail.
-				if(childPID == -1){
+				if(lastPID == -1){
 					perror("Wait failed");
 					exit(1);
 				}
 			
 				// No processes have terminated.	
-				if(childPID == 0){
+				if(lastPID == 0){
 					printf("No foreground processes have terminated.\n");
 					
 				// Check if exited normally or terminated by signal.	
-				} else if(WIFEXITED(childExitMethod) != 0) { 
-					int exitStat = WEXITSTATUS(childExitMethod);
+				} else if(WIFEXITED(lastExit)) { 
+					int exitStat = WEXITSTATUS(lastExit);
 					printf("exit value %d\n", exitStat);	
 				} else {
-					int termSig = WTERMSIG(childExitMethod);
+					int termSig = WTERMSIG(lastExit);
 					printf("terminated by signal %d\n", termSig);
 				}
 
@@ -151,7 +150,8 @@ void userInput() {
 					
 					// This is the parent, wait for child to finish.
 					default: {
-						waitpid(spawnPID, &childExitMethod, 0); // Wait for child.
+						lastPID = waitpid(spawnPID, &childExitMethod, 0); // Wait for child.
+						lastExit = childExitMethod; // Save the exit info from last process.
 						break;
 					}
 							
