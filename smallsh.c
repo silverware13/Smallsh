@@ -13,19 +13,6 @@
 
 int main (int argc, char **argvi) {
 
-	userInput();	
-	
-	// Free memory.
-	//free(buffer);
-	//free(args);
-
-	return 0;
-
-}
-
-// Wait for and accept user input.
-void userInput() {
-
 	// Buffer info.
 	char *buffer;
 	size_t bufSize = MAX_CHARS;
@@ -33,8 +20,33 @@ void userInput() {
 	buffer = (char *)malloc(bufSize * sizeof(char));
 	
 	// Stores arguments.
-	//char args[MAX_ARGS][50];
-	char** args = calloc(MAX_ARGS, sizeof(char*));		
+	char **args = calloc(MAX_ARGS, sizeof(char*));		
+	
+	// Loop until we exit manualy.
+	while(1){ 
+		
+		// Get user input.
+		userInput(buffer, bufSize, args);	
+	
+		// Perform command.
+		perfComm();
+	
+	}	
+
+	// Free memory.
+	free(buffer);
+	free(args);
+
+	return 0;
+
+}
+
+void perfComm() {
+
+}
+
+// Wait for and accept user input.
+void userInput(char *buffer, size_t bufSize, char **args) {
 
 	// Stores the last child process id and exit.
 	pid_t lastPID = 0;
@@ -53,7 +65,7 @@ void userInput() {
 	
 		// Check if input is just whitespace.
 		int emptyEnter = 1;
-		for(int i = 0; i < bufSize; i++) {
+		for(int i = 0; i < MAX_CHARS; i++) {
 				
 			// Check for non-white space chars.
 			if( buffer[i] != ' ' && buffer[i] != '\t' && buffer[i] != '\0' && buffer[i] != '\n' ){
