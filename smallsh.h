@@ -18,11 +18,12 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <signal.h>
 
 // Function declarations.
 int userInput(char*, size_t, char**);
-void perfComm(char**, pid_t*, int*);
+void perfComm(char**, pid_t*, int*, pid_t[*]);
 void smallExit();
 void smallCd(char**);
 void smallStatus(char**, pid_t*, int*);
-void forkExe(char**, pid_t*, int*);
+void forkExe(char**, pid_t*, int*, pid_t[*]);

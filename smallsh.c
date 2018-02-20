@@ -22,10 +22,11 @@ int main (int argc, char **argvi) {
 	// Stores arguments.
 	char **args = calloc(MAX_ARGS, sizeof(char*));		
 
-	// Stores the last child process id and exit.
+	// Stores child process info.
+	pid_t rngProcs[100] = calloc(100, sizeof(pid_t));
 	pid_t lastPID = 0;
 	int lastExit = 0;
-	
+		
 	// Lets us know if the given command is valid.
 	int validComm;	
 
@@ -37,7 +38,7 @@ int main (int argc, char **argvi) {
 	
 		// Perform command if a valid command was given.
 		if(validComm == 1) {
-			perfComm(args, &lastPID, &lastExit);
+			perfComm(args, &lastPID, &lastExit, rngProcs);
 		}
 	
 	}	
@@ -45,6 +46,7 @@ int main (int argc, char **argvi) {
 	// Free memory.
 	free(buffer);
 	free(args);
+	free(rngProcs);
 
 	return 0;
 
@@ -111,7 +113,7 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 }
 
 // Perform a command based on user input.
-void perfComm(char **args, pid_t *lastPID, int *lastExit) {
+void perfComm(char **args, pid_t *lastPID, int *lastExit, pid_t rngProcs[*]) {
 
 	// Exit the process, terminate any processes we have stared.
 	if(strcmp(args[0], "exit") == 0){
@@ -131,7 +133,7 @@ void perfComm(char **args, pid_t *lastPID, int *lastExit) {
 	// If the user did not enter a built in command we fork the process then execute.
 	} else {
 
-		forkExe(args, lastPID, lastExit);			
+		forkExe(args, lastPID, lastExit, rngProcs);			
 
 	}
 
@@ -148,7 +150,6 @@ void smallExit() {
 
 void smallCd(char **args) {
 
-	//if(strcmp(args[1], '\0') == 0){
 	if(args[1] == '\0'){
 
 		// If cd has no args go to HOME.
@@ -189,7 +190,7 @@ void smallStatus(char **args, pid_t *lastPID, int *lastExit) {
 
 }
 
-void forkExe(char **args, pid_t *lastPID, int *lastExit) {
+void forkExe(char **args, pid_t *lastPID, int *lastExit), pid_t rngProcs[*]) {
 
 	pid_t spawnPID = -5;
 	int childExitMethod = -5;
@@ -202,26 +203,54 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 				
 		// If fork fails throw error.	
 		case -1: {
+
 			perror("Fork failed.\n");
 			exit(1);
 			break;
+
 		}		
 					
 		// This process is the child, execute command.
 		case 0: {
+
 			// Perform any needed input / output redirection.
 			// use dup2()? Don't pass dest/source into the exec.
 							
 			execvp(args[0], args); // Execute command.
 			perror("Command could not be executed.\n"); // Only get error if process never executed.
 			exit(1);
-			break;	
+			break;
+	
 		}
 					
 		// This is the parent, wait for child to finish.
 		default: {
+		
+			// Store the child process in an array.
+			for(int i = 0; i < 100; i++){
+			
+				if(rngProcs[i] == '\0'){
+					rngProcs[i] = spawnPID;
+					printf("STORED PID\n");
+					break
+				}		
+
+			}
+
 			*lastPID = waitpid(spawnPID, &childExitMethod, 0); // Wait for child.
 			*lastExit = childExitMethod; // Save the exit info from last process.
+			
+			// Remove the child process from array.
+			for(int i = 0; i < 100; i++){
+			
+				if(rngProcs[i] == spawnPID){
+					rngProcs[i] = '\0';
+					printf("REMOVE PID\n");
+					break
+				}		
+
+			}
+
 			break;
 		}
 
