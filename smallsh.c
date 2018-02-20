@@ -23,7 +23,8 @@ int main (int argc, char **argvi) {
 	char **args = calloc(MAX_ARGS, sizeof(char*));		
 
 	// Stores child process info.
-	pid_t rngProcs[100] = calloc(100, sizeof(pid_t));
+	pid_t rngProcs[100];
+	memset(rngProcs, '\0', 100 * sizeof(pid_t));		
 	pid_t lastPID = 0;
 	int lastExit = 0;
 		
@@ -46,7 +47,6 @@ int main (int argc, char **argvi) {
 	// Free memory.
 	free(buffer);
 	free(args);
-	free(rngProcs);
 
 	return 0;
 
@@ -113,7 +113,7 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 }
 
 // Perform a command based on user input.
-void perfComm(char **args, pid_t *lastPID, int *lastExit, pid_t rngProcs[*]) {
+void perfComm(char **args, pid_t *lastPID, int *lastExit, pid_t rngProcs[100]) {
 
 	// Exit the process, terminate any processes we have stared.
 	if(strcmp(args[0], "exit") == 0){
@@ -190,7 +190,7 @@ void smallStatus(char **args, pid_t *lastPID, int *lastExit) {
 
 }
 
-void forkExe(char **args, pid_t *lastPID, int *lastExit), pid_t rngProcs[*]) {
+void forkExe(char **args, pid_t *lastPID, int *lastExit, pid_t rngProcs[100]) {
 
 	pid_t spawnPID = -5;
 	int childExitMethod = -5;
@@ -231,8 +231,8 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit), pid_t rngProcs[*]) {
 			
 				if(rngProcs[i] == '\0'){
 					rngProcs[i] = spawnPID;
-					printf("STORED PID\n");
-					break
+					//printf("STORED PID %ld\n", (long) spawnPID);
+					break;
 				}		
 
 			}
@@ -245,13 +245,14 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit), pid_t rngProcs[*]) {
 			
 				if(rngProcs[i] == spawnPID){
 					rngProcs[i] = '\0';
-					printf("REMOVE PID\n");
-					break
+					//printf("REMOVE PID %ld\n", (long) spawnPID);
+					break;
 				}		
 
 			}
 
 			break;
+
 		}
 
 	}
