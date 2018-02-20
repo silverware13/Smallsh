@@ -13,7 +13,6 @@
 
 int main (int argc, char **argvi) {
 
-	// Wait for user input.
 	userInput();	
 	
 	return 0;
@@ -29,12 +28,10 @@ void userInput() {
 	size_t characters;
 	buffer = (char *)malloc(bufSize * sizeof(char));
 	
-	// Stores user command.
-	char command[50];
-	
 	// Stores arguments.
-	char arg[MAX_ARGS][50];
-	
+	//char args[MAX_ARGS][50];
+	char** args = calloc(MAX_ARGS, sizeof(char*));		
+
 	// Stores the last child process id and exit.
 	pid_t lastPID = 0;
 	int lastExit = 0;
@@ -67,26 +64,39 @@ void userInput() {
 		// Ignore the input if it is a comment or whitespace.
 		if(buffer[0] != '#' && emptyEnter == 0){	
 			
-			// Save command and arguments.
-			memset(command, '\0', sizeof(command)); // We clear command before reading in.
-			memset(arg, '\0', sizeof(arg[0][0]) * MAX_ARGS * 50); // We clear args before reading in.
-			int bytesConsumed = 0, bytesNow = 0; // Keep track of the number of bytes we have travled in the string.
- 			sscanf(buffer, "%s", command);
-			for(int i = 0; i < MAX_ARGS && sscanf(buffer + bytesConsumed, "%s%n", arg[i], & bytesNow) == 1; i++) {
-				bytesConsumed += bytesNow;
-			}	
-			
+			// Save arguments.
+			//memset(args, '\0', sizeof(args)); // We clear args before reading in.
+			//char nextString[50];
+			//memset(nextString, '\0', sizeof(nextString));
+			//int bytesConsumed = 0, bytesNow = 0; // Keep track of the number of bytes we have travled in the string.
+			//for(int i = 0; i < MAX_ARGS && sscanf(buffer + bytesConsumed, "%s%n", nextString, & bytesNow) == 1; i++) {
+			//	
+			//	bytesConsumed += bytesNow;
+			//}	
+		
+			// Save arguments.
+			char* word;
+
+			// Get the command.
+			word = strtok(buffer, " ");
+			printf("%s#\n", word);
+
+			while( word != NULL) {
+				word = strtok(NULL, " ");
+			        printf("%s#\n", word);
+			}
+				
 			// Perform a command based on user input.
 			// Exit the process, terminate any processes we have stared.
-			if(strcmp(command,"exit") == 0){
+			if(strcmp(args[0], "exit") == 0){
 
 				// Terminate any process we started.
 				exit(0);
 
 			// Change directory, go to HOME if no arguments defined.
-			} else if(strcmp(command,"cd") == 0){
+			} else if(strcmp(args[0], "cd") == 0){
 
-				if(strcmp(arg[1],"") == 0){
+				if(strcmp(args[1],"") == 0){
 					
 					// If cd has no args go to HOME.
 					chdir(getenv("HOME"));				
@@ -94,13 +104,13 @@ void userInput() {
 				} else {
 			
 					// We go to the directory specified. 
-					if(chdir(arg[1]) != 0){
-						printf("%s: No such file or directory.\n", arg[1]);
+					if(chdir(args[1]) != 0){
+						printf("%s: No such file or directory.\n", args[1]);
 					}	
 				}
 			
 			// Show either the exit status or the terminating signal of the last foreground process. 
-			} else if(strcmp(command,"status") == 0){
+			} else if(strcmp(args[0], "status") == 0){
 				
 				// Make sure wait did not fail.
 				if(lastPID == -1){
@@ -144,8 +154,8 @@ void userInput() {
 					case 0: {
 						// Perform any needed input / output redirection.
 						// use dup2()? Don't pass dest/source into the exec.
-						
-						execlp(command, command, arg[1], arg[2], arg[3], arg[4], NULL); // Execute command.
+								
+						execvp(&args[0], args); // Execute command.
 						perror("Command could not be executed.\n"); // Only get error if process never executed.
 						exit(1);
 						break;	
