@@ -69,31 +69,20 @@ void userInput() {
 		}			
 	
 		// Ignore the input if it is a comment or whitespace.
+		// Otherwise we store the arguments in an array.
 		if(buffer[0] != '#' && emptyEnter == 0){	
 			
 			// Save arguments.
-			//memset(args, '\0', sizeof(args)); // We clear args before reading in.
-			//char nextString[50];
-			//memset(nextString, '\0', sizeof(nextString));
-			//int bytesConsumed = 0, bytesNow = 0; // Keep track of the number of bytes we have travled in the string.
-			//for(int i = 0; i < MAX_ARGS && sscanf(buffer + bytesConsumed, "%s%n", nextString, & bytesNow) == 1; i++) {
-			//	
-			//	bytesConsumed += bytesNow;
-			//}	
-		
-			// Save arguments.
+			memset(args, '\0', MAX_ARGS * sizeof(char*));		
 			char* word;
 
 			// Get the command.
 			word = strtok(buffer, " ");
-			args[0] = word;
-			printf("%s#\n", word);
 
 			// Get the other args.
-			for(int i = 1; word != NULL; i++) {
-				word = strtok(NULL, " ");
+			for(int i = 0; word != NULL; i++) {
 				args[i] = word;
-			        printf("%s#\n", word);
+				word = strtok(NULL, " ");
 			}
 				
 			// Perform a command based on user input.
@@ -106,8 +95,9 @@ void userInput() {
 			// Change directory, go to HOME if no arguments defined.
 			} else if(strcmp(args[0], "cd") == 0){
 
-				if(strcmp(args[1],"") == 0){
-					
+				//if(strcmp(args[1], '\0') == 0){
+				if(args[1] == '\0'){
+
 					// If cd has no args go to HOME.
 					chdir(getenv("HOME"));				
 
