@@ -15,6 +15,10 @@ int main (int argc, char **argvi) {
 
 	userInput();	
 	
+	// Free memory.
+	//free(buffer);
+	//free(args);
+
 	return 0;
 
 }
@@ -43,11 +47,14 @@ void userInput() {
 		
 		// Get user input as a string.
 		getline(&buffer, &bufSize, stdin);
+
+		// Clear new lines from our string.
+		strtok(buffer, "\n");		
 	
 		// Check if input is just whitespace.
 		int emptyEnter = 1;
 		for(int i = 0; i < bufSize; i++) {
-	
+				
 			// Check for non-white space chars.
 			if( buffer[i] != ' ' && buffer[i] != '\t' && buffer[i] != '\0' && buffer[i] != '\n' ){
 				emptyEnter = 0;
@@ -55,7 +62,7 @@ void userInput() {
 			}
 
 			// If we have a null char we end early.
-			if(buffer[i] != '\0'){
+			if(buffer[i] == '\0'){
 				break;
 			}
 
@@ -79,10 +86,13 @@ void userInput() {
 
 			// Get the command.
 			word = strtok(buffer, " ");
+			args[0] = word;
 			printf("%s#\n", word);
 
-			while( word != NULL) {
+			// Get the other args.
+			for(int i = 1; word != NULL; i++) {
 				word = strtok(NULL, " ");
+				args[i] = word;
 			        printf("%s#\n", word);
 			}
 				
@@ -155,7 +165,7 @@ void userInput() {
 						// Perform any needed input / output redirection.
 						// use dup2()? Don't pass dest/source into the exec.
 								
-						execvp(&args[0], args); // Execute command.
+						execvp(args[0], args); // Execute command.
 						perror("Command could not be executed.\n"); // Only get error if process never executed.
 						exit(1);
 						break;	
