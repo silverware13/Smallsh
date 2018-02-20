@@ -20,5 +20,9 @@
 #include <unistd.h>
 
 // Function declarations.
-void userInput(); // Wait and accept user input.
-
+int userInput(char*, size_t, char**);
+void perfComm(char**, pid_t*, int*);
+void smallExit();
+void smallCd(char**);
+void smallStatus(char**, pid_t*, int*);
+void forkExe(char**, pid_t*, int*);
