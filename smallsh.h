@@ -22,8 +22,8 @@
 
 // Function declarations.
 int userInput(char*, size_t, char**);
-void perfComm(char**, pid_t*, int*, pid_t[*]);
+void perfComm(char**, pid_t*, int*);
 void smallExit();
 void smallCd(char**);
 void smallStatus(char**, pid_t*, int*);
-void forkExe(char**, pid_t*, int*, pid_t[*]);
+void forkExe(char**, pid_t*, int*);

@@ -23,8 +23,6 @@ int main (int argc, char **argvi) {
 	char **args = calloc(MAX_ARGS, sizeof(char*));		
 
 	// Stores child process info.
-	pid_t rngProcs[100];
-	memset(rngProcs, '\0', 100 * sizeof(pid_t));		
 	pid_t lastPID = 0;
 	int lastExit = 0;
 		
@@ -39,7 +37,7 @@ int main (int argc, char **argvi) {
 	
 		// Perform command if a valid command was given.
 		if(validComm == 1) {
-			perfComm(args, &lastPID, &lastExit, rngProcs);
+			perfComm(args, &lastPID, &lastExit);
 		}
 	
 	}	
@@ -52,7 +50,16 @@ int main (int argc, char **argvi) {
 
 }
 
-// Wait for and accept user input.
+
+// Wait for and perform simple validation of user input.
+//
+// Input:
+// 1: Buffer that will store stdin.
+// 2: Size of the buffer.
+// 3: Memory to store arguments of command given by user.
+//
+// Return: Returns 0 if the input is not a command, 
+// otherwise returns 1.
 int userInput(char *buffer, size_t bufSize, char **args) {
 
 	// Show prompt.
@@ -110,10 +117,16 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 		return 0;
 
 	}
+
 }
 
 // Perform a command based on user input.
-void perfComm(char **args, pid_t *lastPID, int *lastExit, pid_t rngProcs[100]) {
+//
+// Input:
+// 1: Memory to store arguments of command given by user.
+// 2: Process id of last foreground process that terminated.
+// 3: Exit status or terminating signal of last process that terminated.
+void perfComm(char **args, pid_t *lastPID, int *lastExit) {
 
 	// Exit the process, terminate any processes we have stared.
 	if(strcmp(args[0], "exit") == 0){
@@ -133,14 +146,16 @@ void perfComm(char **args, pid_t *lastPID, int *lastExit, pid_t rngProcs[100]) {
 	// If the user did not enter a built in command we fork the process then execute.
 	} else {
 
-		forkExe(args, lastPID, lastExit, rngProcs);			
+		forkExe(args, lastPID, lastExit);			
 
 	}
 
 	// Flush stdout. 
-	fflush(stdout);	
+	fflush(stdout);
+	
 }
 
+// Terminate all children and exit the process.
 void smallExit() {
 
 	// Terminate any process we started.
@@ -148,9 +163,14 @@ void smallExit() {
 
 }
 
+// Changes the working directory to given directory. 
+// If no directory is given, changes to HOME directory.
+//
+// Input:
+// 1: Arguments of command given by user.
 void smallCd(char **args) {
 
-	if(args[1] == '\0'){
+	if(args[1] == '\0' || args[1] == "&"){
 
 		// If cd has no args go to HOME.
 		chdir(getenv("HOME"));				
@@ -159,14 +179,21 @@ void smallCd(char **args) {
 			
 		// We go to the directory specified. 
 		if(chdir(args[1]) != 0){
+		
 			printf("%s: No such file or directory.\n", args[1]);
-
+			
 		}	
 
 	}
 
 }
 
+// Prints out either the exit status or the terminating signal of the last foreground process.
+//
+// Input:
+// 1: Arguments of command given by user.
+// 2: Process id of last foreground process that terminated.
+// 3: Exit status or terminating signal of last process that terminated.
 void smallStatus(char **args, pid_t *lastPID, int *lastExit) {
 		
 	// Make sure wait did not fail.
@@ -190,7 +217,13 @@ void smallStatus(char **args, pid_t *lastPID, int *lastExit) {
 
 }
 
-void forkExe(char **args, pid_t *lastPID, int *lastExit, pid_t rngProcs[100]) {
+// Forks and executes a given command.
+//
+// Input:
+// 1: Arguments of command given by user.
+// 2: Process id of last foreground process that terminated.
+// 3: Exit status or terminating signal of last process that terminated.
+void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 
 	pid_t spawnPID = -5;
 	int childExitMethod = -5;
@@ -226,31 +259,8 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit, pid_t rngProcs[100]) {
 		// This is the parent, wait for child to finish.
 		default: {
 		
-			// Store the child process in an array.
-			for(int i = 0; i < 100; i++){
-			
-				if(rngProcs[i] == '\0'){
-					rngProcs[i] = spawnPID;
-					//printf("STORED PID %ld\n", (long) spawnPID);
-					break;
-				}		
-
-			}
-
 			*lastPID = waitpid(spawnPID, &childExitMethod, 0); // Wait for child.
 			*lastExit = childExitMethod; // Save the exit info from last process.
-			
-			// Remove the child process from array.
-			for(int i = 0; i < 100; i++){
-			
-				if(rngProcs[i] == spawnPID){
-					rngProcs[i] = '\0';
-					//printf("REMOVE PID %ld\n", (long) spawnPID);
-					break;
-				}		
-
-			}
-
 			break;
 
 		}
