@@ -93,14 +93,14 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 	// Otherwise we store the arguments in an array.
 	if(buffer[0] != '#' && emptyEnter == 0){	
 			
-		// Save arguments.
+		// Make sure arguments start as null.
 		memset(args, '\0', MAX_ARGS * sizeof(char*));		
 		char* word;
 
 		// Get the command.
 		word = strtok(buffer, " ");
 
-		// Get the other args.
+		// Get the arguments.
 		for(int i = 0; word != NULL; i++) {
 			args[i] = word;
 			word = strtok(NULL, " ");
@@ -245,6 +245,38 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			// Perform any needed input / output redirection.
 			// use dup2()? Don't pass dest/source into the exec.
 			// Setup background processes if they are called.
+			
+			// FIX SEGFAULT FOR THIS LINE.
+			//for(int i = 0; i < MAX_ARGS; i++) {
+			// We look through arguments for an output redirect.
+			for(int i = 0; i < MAX_ARGS; i++) {
+			
+				if( args[i] != '\0') {	
+				// Check for output redirect.
+				if( strcmp(args[i], ">") == 0 ){
+					printf("FOUND > \n");
+					break;				
+				} else {
+					printf("args[0] : %s\n", args[i]);
+				}
+				}
+
+				/*	
+				// Check for input redirect.
+				if( strcmp(args[i], "<") == 0 ){
+					printf("FOUND < \n");
+					break;				
+				}
+				*/
+				//printf("%i\n", i);
+				// Check for background.				
+
+				// If we have a null char we end early.
+				//if(buffer[i] == '\0'){
+				//	break;
+				//}
+
+			}			
 
 			execvp(args[0], args); // Execute command.
 			perror("Command could not be executed.\n"); // Only get error if process never executed.
