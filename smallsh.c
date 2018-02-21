@@ -170,7 +170,9 @@ void smallExit() {
 // 1: Arguments of command given by user.
 void smallCd(char **args) {
 
-	if(args[1] == '\0' || args[1] == "&"){
+	// We check to see if any directory was specified
+	// with the cd command (We ignore &).
+	if(args[1] == '\0' || strcmp(args[1], "&") == 0){
 
 		// If cd has no args go to HOME.
 		chdir(getenv("HOME"));				
@@ -196,12 +198,6 @@ void smallCd(char **args) {
 // 3: Exit status or terminating signal of last process that terminated.
 void smallStatus(char **args, pid_t *lastPID, int *lastExit) {
 		
-	// Make sure wait did not fail.
-	if(*lastPID == -1){
-		perror("Wait failed");
-		exit(1);
-	}
-			
 	// No processes have terminated.	
 	if(*lastPID == 0){
 		printf("No foreground processes have terminated.\n");
@@ -248,7 +244,8 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 
 			// Perform any needed input / output redirection.
 			// use dup2()? Don't pass dest/source into the exec.
-							
+			// Setup background processes if they are called.
+
 			execvp(args[0], args); // Execute command.
 			perror("Command could not be executed.\n"); // Only get error if process never executed.
 			exit(1);
