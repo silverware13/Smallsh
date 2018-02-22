@@ -100,12 +100,22 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 		// Get the command.
 		word = strtok(buffer, " ");
 
+		// Points to any instance of $$ in input.
+		char* ptrExp;
+
 		// Get the arguments.
 		for(int i = 0; word != NULL; i++) {
+			
+			// Expand $$ we find into the process id.
+			if(strstr(args[i], "$$") != NULL){
+				printf("Found $$.\n");
+			}
+
+			// Store arguments in array.
 			args[i] = word;
 			word = strtok(NULL, " ");
 		}
-	
+		
 		// We have recevied a command
 		// we return 1.
 		return 1;
