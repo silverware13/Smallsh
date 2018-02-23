@@ -100,20 +100,35 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 		// Get the command.
 		word = strtok(buffer, " ");
 
-		// Points to any instance of $$ in input.
-		char* ptrExp;
+		// Variables to expand $$.
+		int curPID = getpid(); // Holds the current process id.
+		char tempBuff[MAX_CHARS]; // Holds expanded argument.
+		char* ptrExp; // Points to any instance of $$ in input.
 
 		// Get the arguments.
 		for(int i = 0; word != NULL; i++) {
 			
-			// Expand $$ we find into the process id.
-			if(strstr(args[i], "$$") != NULL){
-				printf("Found $$.\n");
-			}
-
 			// Store arguments in array.
 			args[i] = word;
 			word = strtok(NULL, " ");
+			
+			// If we find a $$ we replace it with the process id.
+			if(strstr(args[i], "$$") != NULL){
+
+				// We get the location of the first char of $$
+				// in our current argument.
+				ptrExp = strstr(args[i], "$$");
+			
+				// We start by copying just the string before $$ into
+				// our temp buffer, then we add the current process id
+				// and the last half of the string back into our temp buffer,
+				// lastley we copy it back into our current argument.
+				strncpy(tempBuff, args[i], ptrExp - args[i]);
+				sprintf(tempBuff+(ptrExp - args[i]), "%d%s", curPID, ptrExp+2);
+				strcpy(args[i],tempBuff);
+
+			}
+
 		}
 		
 		// We have recevied a command
@@ -294,7 +309,7 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			//!! Setup background processes if they are called.
 			
 			execvp(args[0], args); // Execute command.
-			perror("Command could not be executed.\n"); // Only get error if process never executed.
+			perror("Command failed to execute"); // Only get error if process never executed.
 			exit(1);
 			break;
 	
