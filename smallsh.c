@@ -263,6 +263,9 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 		// This process is the child, execute command.
 		case 0: {
 
+			int i_out = -1; // Will store the location of output redirection.
+			int i_in = -1; // Will store the location of input redirection.
+
 			// We look through arguments for an input/output redirect.
 			for(int i = 0; i < MAX_ARGS; i++) {
 			        
@@ -280,27 +283,27 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 					int result = dup2(targetFD, 1);
 					if (result == -1) { perror("dup2"); exit(2); }
 					// Set the redirect argument to NULL so we can pass args to exe.
-					args[i] = '\0';
-					break;
+					i_out = i;
 				}
 				
 				// Check for input redirect.
 				if( strcmp(args[i], "<") == 0 ){
 					// Open input file.
-					int targetFD = open(args[i+1], O_RDONLY);
-					if (targetFD == -1) { perror("open()"); exit(1); }
+					int sourceFD = open(args[i+1], O_RDONLY);
+					if (sourceFD == -1) { perror("open()"); exit(1); }
 					// Redirect input.
-					int result = dup2(targetFD, 0);
+					int result = dup2(sourceFD, 0);
 					if (result == -1) { perror("dup2"); exit(2); }
 					// Set the redirect argument to NULL so we can pass args to exe.
-					args[i] = '\0';
-					break;
+					i_in = i;
 				}
 
 			}			
 
-			//!! Make sure we close and reopen files so they aren't the same in parent.
-			
+			// Check if we used redirection, if we did prevent it from being passed to our execute.
+			if(i_out != -1){ args[i_out] = '\0'; }
+			if(i_in != -1){ args[i_in] = '\0'; }
+
 			//!! Setup background processes if they are called.
 			
 			execvp(args[0], args); // Execute command.
