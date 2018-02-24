@@ -63,8 +63,7 @@ int main (int argc, char **argvi) {
 int userInput(char *buffer, size_t bufSize, char **args) {
 
 	// Show prompt.
-	printf(":");		
-	fflush(stdout);
+	printf(":"); fflush(stdout);
 		
 	// Get user input as a string.
 	getline(&buffer, &bufSize, stdin);
@@ -174,9 +173,6 @@ void perfComm(char **args, pid_t *lastPID, int *lastExit) {
 		forkExe(args, lastPID, lastExit);			
 
 	}
-
-	// Flush stdout. 
-	fflush(stdout);
 	
 }
 
@@ -207,7 +203,7 @@ void smallCd(char **args) {
 		// We go to the directory specified. 
 		if(chdir(args[1]) != 0){
 		
-			printf("%s: No such file or directory.\n", args[1]);
+			printf("%s: No such file or directory.\n", args[1]); fflush(stdout);
 			
 		}	
 
@@ -225,15 +221,15 @@ void smallStatus(char **args, pid_t *lastPID, int *lastExit) {
 		
 	// No processes have terminated.	
 	if(*lastPID == 0){
-		printf("No foreground processes have terminated.\n");
+		printf("No foreground processes have terminated.\n"); fflush(stdout);
 					
 		// Check if exited normally or terminated by signal.	
 	} else if(WIFEXITED(*lastExit)) { 
 		int exitStat = WEXITSTATUS(*lastExit);
-		printf("exit value %d\n", exitStat);	
+		printf("exit value %d\n", exitStat); fflush(stdout);	
 	} else {
 		int termSig = WTERMSIG(*lastExit);
-		printf("terminated by signal %d\n", termSig);
+		printf("terminated by signal %d\n", termSig); fflush(stdout);
 	}
 
 }
@@ -267,7 +263,6 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 		// This process is the child, execute command.
 		case 0: {
 
-			
 			// We look through arguments for an input/output redirect.
 			for(int i = 0; i < MAX_ARGS; i++) {
 			        
@@ -292,7 +287,7 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 				// Check for input redirect.
 				if( strcmp(args[i], "<") == 0 ){
 					// Open input file.
-					int targetFD = open(args[i+1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+					int targetFD = open(args[i+1], O_RDONLY);
 					if (targetFD == -1) { perror("open()"); exit(1); }
 					// Redirect input.
 					int result = dup2(targetFD, 0);
