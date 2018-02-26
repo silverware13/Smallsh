@@ -13,6 +13,13 @@
 
 int main (int argc, char **argvi) {
 
+	// Setup signal structs.
+	struct sigaction SIGINT_action = {0}, SIGTSTP_action = {0};	
+
+	SIGINT_action.sa_handler = catchSIGINT;
+	sigfillset(&SIGINT_action.sa_mask);
+	SIGINT_action.sa_flags = 0;	
+
 	// Buffer info.
 	char *buffer;
 	size_t bufSize = MAX_CHARS;
