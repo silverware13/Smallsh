@@ -38,3 +38,6 @@ void smallStatus(char**, pid_t*, int*);
 
 // Forks and then executes a given command.
 void forkExe(char**, pid_t*, int*);
+
+// Handle interupt signals.
+void catchSIGINT(int signo) {

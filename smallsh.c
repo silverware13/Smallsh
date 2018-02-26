@@ -325,3 +325,15 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 	}
 
 }
+
+// This function handles an interupt signal.
+//
+// Input:
+// 1: The signal number.
+void catchSIGINT(int signo) {
+	
+	char* message = "Caught SIGINT, sleeping for 5 seconds\n";
+	write(STDOUT_FILENO, message, 38);
+	sleep(5);
+
+}
