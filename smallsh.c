@@ -72,7 +72,6 @@ int main (int argc, char **argvi) {
 
 }
 
-
 // Wait for and perform simple validation of user input.
 //
 // Input:
@@ -281,7 +280,7 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			break;
 
 		}		
-					
+			
 		// This process is the child, execute command.
 		case 0: {
 		
@@ -291,7 +290,37 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			sigfillset(&SIGINT_action.sa_mask);
 			SIGINT_action.sa_flags = 0;	
 			sigaction(SIGINT, &SIGINT_action, NULL);
- 
+			
+			// Check to see if this is a background process.
+			for(int i = 0; i < MAX_ARGS; i++) {
+				
+				// If the next argument is NULL break.
+				if( args[i] == '\0') {
+					break;
+				}	
+
+				// Is the last argument &.
+				if(strcmp(args[i], "&") == 0 && args[i+1] == '\0') {
+					
+					args[i] = '\0'; // Don't pass & to exe.	
+					SIGINT_action.sa_handler = SIG_IGN; // We ignore SIGINT.
+					// Open output file.
+					int targetFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+					if (targetFD == -1) { perror("open()"); exit(1); }
+					// Redirect output.
+					int result = dup2(targetFD, 0);
+					if (result == -1) { perror("dup2"); exit(2); }
+					// Open input file.
+					int sourceFD = open("/dev/null", O_RDONLY);
+					if (sourceFD == -1) { perror("open()"); exit(1); }
+					// Redirect input.
+					result = dup2(sourceFD, 0);
+					if (result == -1) { perror("dup2"); exit(2); }
+					break;
+
+				}
+			}
+			 
 			int i_out = -1; // Will store the location of output redirection.
 			int i_in = -1; // Will store the location of input redirection.
 
@@ -332,8 +361,6 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			// Check if we used redirection, if we did prevent it from being passed to our execute.
 			if(i_out != -1){ args[i_out] = '\0'; }
 			if(i_in != -1){ args[i_in] = '\0'; }
-
-			//!! Setup background processes if they are called.
 			
 			execvp(args[0], args); // Execute command.
 			perror("Command failed to execute"); // Only get error if process never executed.
@@ -345,8 +372,28 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 		// This is the parent, wait for child to finish.
 		default: {
 		
-			*lastPID = waitpid(spawnPID, &childExitMethod, 0); // Wait for child.
-			*lastExit = childExitMethod; // Save the exit info from last process.
+			// Check to see we just forked a background process.
+			int bckgrnd = 0;
+			for(int i = 0; i < MAX_ARGS; i++) {
+				// If the next argument is NULL break.
+				if( args[i] == '\0') {
+					break;
+				}	
+				// Is the last argument &.
+				if(strcmp(args[i], "&") == 0 && args[i+1] == '\0') {
+					bckgrnd = 1;
+				}
+			}
+			
+			// We wait for foreground processes.
+			if(bckgrnd == 0){
+				*lastPID = waitpid(spawnPID, &childExitMethod, 0); // Wait for child.
+				*lastExit = childExitMethod; // Save the exit info from last process.
+			
+			// we don't wait for background processes.
+			} else {
+				printf("Background process id: %d\n", spawnPID);
+			}	
 			break;
 
 		}
@@ -385,23 +432,22 @@ void catchSIGTSTP(int signo) {
 void catchSIGCHLD(int signo) {
 
 	// Get info about termination and clean up child.	
-	int childExitMethod = -5;
-	pid_t childPID = waitpid(-1, &childExitMethod, 0);
+	pid_t childPID;
+	int childExitMethod;
 
-	if(childPID == -1) {
-		exit(5);
+	// We use a while loop incase multiple children exit at the same time.	
+	while ((childPID = waitpid(-1, &childExitMethod, WNOHANG)) != -1)
+	{
+		// Make sure the child was killed by a signal.
+		//if(WIFSIGNALED(childExitMethod)) {
+		
+			//int termSig = WTERMSIG(childExitMethod); // We find the signal that killed.
+		
+			// If the killer signal was 2, display that info.
+			//if(termSig) {
+				char* message = "terminated by signal 2\n";
+				write(STDOUT_FILENO, message, 23);
+			//}
+		//}
 	}
-		
-	// Make sure the child was killed by a signal.
-	if(WIFSIGNALED(childExitMethod)) {
-		
-		int termSig = WTERMSIG(childExitMethod); // We find the signal that killed.
-		
-		// If the killer signal was 2, display that info.
-		if(termSig) {
-			char* message = "terminated by signal 2\n";
-			write(STDOUT_FILENO, message, 23);
-		}
-	}
-
 }
