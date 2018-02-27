@@ -33,7 +33,7 @@ int main (int argc, char **argvi) {
 	
 	sigaction(SIGINT, &SIGINT_action, NULL);
 	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
-	sigaction(SIGCHLD, &SIGCHLD_action, NULL);
+	//sigaction(SIGCHLD, &SIGCHLD_action, NULL);
 	
 	// Buffer info.
 	char *buffer;
@@ -47,12 +47,20 @@ int main (int argc, char **argvi) {
 	// Stores child process info.
 	pid_t lastPID = 0;
 	int lastExit = 0;
+	pid_t childPID;
+	int childExitMethod;
 		
 	// Lets us know if the given command is valid.
 	int validComm;	
 
 	// Loop until we exit manualy.
 	while(1){ 
+		
+		// Check if a background process has exited.	
+		childPID = waitpid(-1, &childExitMethod, WNOHANG);
+		if(childPID > 0){
+			printf("Background process id: %d. Exit status.\n", childPID); fflush(stdout);
+		}
 		
 		// Get user input.
 		validComm = userInput(buffer, bufSize, args);	
@@ -303,7 +311,7 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 				if(strcmp(args[i], "&") == 0 && args[i+1] == '\0') {
 					
 					args[i] = '\0'; // Don't pass & to exe.	
-					SIGINT_action.sa_handler = SIG_IGN; // We ignore SIGINT.
+					//SIGINT_action.sa_handler = SIG_IGN; // We ignore SIGINT.
 					// Open output file.
 					int targetFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
 					if (targetFD == -1) { perror("open()"); exit(1); }
@@ -392,7 +400,7 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			
 			// we don't wait for background processes.
 			} else {
-				printf("Background process id: %d\n", spawnPID);
+				printf("Background process id: %d\n", spawnPID); fflush(stdout);
 			}	
 			break;
 
@@ -436,8 +444,9 @@ void catchSIGCHLD(int signo) {
 	int childExitMethod;
 
 	// We use a while loop incase multiple children exit at the same time.	
-	while ((childPID = waitpid(-1, &childExitMethod, WNOHANG)) != -1)
-	{
+	//while ((childPID = waitpid(-1, &childExitMethod, WNOHANG)) != -1)
+	childPID = waitpid(-1, &childExitMethod, WNOHANG);
+	if(childPID != -1){
 		// Make sure the child was killed by a signal.
 		//if(WIFSIGNALED(childExitMethod)) {
 		
