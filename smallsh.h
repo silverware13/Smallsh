@@ -44,3 +44,6 @@ void catchSIGINT(int);
 
 // This function handles terminal stop signals.
 void catchSIGTSTP(int);
+
+// This function handles child terminating signals.
+void catchSIGCHLD(int);

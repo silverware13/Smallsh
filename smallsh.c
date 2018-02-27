@@ -14,18 +14,26 @@
 int main (int argc, char **argvi) {
 
 	// Setup signal handling.
-	struct sigaction SIGINT_action = {0}, SIGTSTP_action = {0};	
+	struct sigaction SIGINT_action = {0}, SIGTSTP_action = {0}, SIGCHLD_action = {0};	
 
+	// Set values for SIGINT handling.
 	SIGINT_action.sa_handler = catchSIGINT;
 	sigfillset(&SIGINT_action.sa_mask);
-	SIGINT_action.sa_flags = 0;	
+	SIGINT_action.sa_flags = SA_RESTART; // Cause interruptible functions to restart.	
 	
+	// Set values for SIGSTP handling.
 	SIGTSTP_action.sa_handler = catchSIGTSTP;
 	sigfillset(&SIGTSTP_action.sa_mask);
 	SIGTSTP_action.sa_flags = 0;	
 	
+	// Set values for SIGCHLD handling.
+	SIGCHLD_action.sa_handler = catchSIGCHLD;
+	sigfillset(&SIGTCHLD_action.sa_mask);
+	SIGCHLD_action.sa_flags = 0;	
+	
 	sigaction(SIGINT, &SIGINT_action, NULL);
 	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
+	sigaction(SIGCHLD, &SIGCHLD_action, NULL);
 	
 	// Buffer info.
 	char *buffer;
@@ -359,7 +367,19 @@ void catchSIGINT(int signo) {
 void catchSIGTSTP(int signo) {
 	
 	char* message = "Caught SIGTSTP, sleeping for 5 seconds\n";
-	write(STDOUT_FILENO, message, 38);
+	write(STDOUT_FILENO, message, 39);
+	sleep(5);
+
+}
+
+// This function handles child terminating signals.
+//
+// Input:
+// 1: The signal number.
+void catchSIGCHLD(int signo) {
+	
+	char* message = "Caught SIGCHLD, sleeping for 5 seconds\n";
+	write(STDOUT_FILENO, message, 39);
 	sleep(5);
 
 }
