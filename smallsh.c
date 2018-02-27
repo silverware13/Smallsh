@@ -28,7 +28,7 @@ int main (int argc, char **argvi) {
 	
 	// Set values for SIGCHLD handling.
 	SIGCHLD_action.sa_handler = catchSIGCHLD;
-	sigfillset(&SIGTCHLD_action.sa_mask);
+	sigfillset(&SIGCHLD_action.sa_mask);
 	SIGCHLD_action.sa_flags = 0;	
 	
 	sigaction(SIGINT, &SIGINT_action, NULL);
@@ -284,7 +284,14 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 					
 		// This process is the child, execute command.
 		case 0: {
-
+		
+			// Set SIGINT handling to default.	
+			struct sigaction SIGINT_action = {0};	
+			SIGINT_action.sa_handler = SIG_DFL;
+			sigfillset(&SIGINT_action.sa_mask);
+			SIGINT_action.sa_flags = 0;	
+			sigaction(SIGINT, &SIGINT_action, NULL);
+ 
 			int i_out = -1; // Will store the location of output redirection.
 			int i_in = -1; // Will store the location of input redirection.
 
@@ -354,9 +361,9 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 // 1: The signal number.
 void catchSIGINT(int signo) {
 	
-	char* message = "Caught SIGINT, sleeping for 5 seconds\n";
-	write(STDOUT_FILENO, message, 38);
-	sleep(5);
+	// We should just ignore this signal for the shell.
+	//char* message = "Caught SIGINT, sleeping for 5 seconds\n";
+	//write(STDOUT_FILENO, message, 38);
 
 }
 
@@ -368,7 +375,6 @@ void catchSIGTSTP(int signo) {
 	
 	char* message = "Caught SIGTSTP, sleeping for 5 seconds\n";
 	write(STDOUT_FILENO, message, 39);
-	sleep(5);
 
 }
 
@@ -377,9 +383,25 @@ void catchSIGTSTP(int signo) {
 // Input:
 // 1: The signal number.
 void catchSIGCHLD(int signo) {
-	
-	char* message = "Caught SIGCHLD, sleeping for 5 seconds\n";
-	write(STDOUT_FILENO, message, 39);
-	sleep(5);
+
+	// Get info about termination and clean up child.	
+	int childExitMethod = -5;
+	pid_t childPID = waitpid(-1, &childExitMethod, 0);
+
+	if(childPID == -1) {
+		exit(5);
+	}
+		
+	// Make sure the child was killed by a signal.
+	if(WIFSIGNALED(childExitMethod)) {
+		
+		int termSig = WTERMSIG(childExitMethod); // We find the signal that killed.
+		
+		// If the killer signal was 2, display that info.
+		if(termSig) {
+			char* message = "terminated by signal 2\n";
+			write(STDOUT_FILENO, message, 23);
+		}
+	}
 
 }
