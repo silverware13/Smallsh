@@ -292,14 +292,8 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 		// This process is the child, execute command.
 		case 0: {
 		
-			// Set SIGINT handling to default.	
-			struct sigaction SIGINT_action = {0};	
-			SIGINT_action.sa_handler = SIG_DFL;
-			sigfillset(&SIGINT_action.sa_mask);
-			SIGINT_action.sa_flags = 0;	
-			sigaction(SIGINT, &SIGINT_action, NULL);
-			
 			// Check to see if this is a background process.
+			int bckProc = 0;
 			for(int i = 0; i < MAX_ARGS; i++) {
 				
 				// If the next argument is NULL break.
@@ -310,25 +304,34 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 				// Is the last argument &.
 				if(strcmp(args[i], "&") == 0 && args[i+1] == '\0') {
 					
-					args[i] = '\0'; // Don't pass & to exe.	
-					//SIGINT_action.sa_handler = SIG_IGN; // We ignore SIGINT.
-					// Open output file.
-					int targetFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-					if (targetFD == -1) { perror("open()"); exit(1); }
-					// Redirect output.
-					int result = dup2(targetFD, 0);
-					if (result == -1) { perror("dup2"); exit(2); }
 					// Open input file.
 					int sourceFD = open("/dev/null", O_RDONLY);
 					if (sourceFD == -1) { perror("open()"); exit(1); }
 					// Redirect input.
-					result = dup2(sourceFD, 0);
+					int result = dup2(sourceFD, 0);
 					if (result == -1) { perror("dup2"); exit(2); }
+					// Open output file.
+					int targetFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+					if (targetFD == -1) { perror("open()"); exit(1); }
+					// Redirect output.
+					result = dup2(targetFD, 0);
+					if (result == -1) { perror("dup2"); exit(2); }
+					bckProc = 1; // Let us know that this is a background process.
+					args[i] = '\0'; // Don't pass & to exe.	
 					break;
-
 				}
 			}
 			 
+			// Set SIGINT handling to default or ignore if background process.	
+			struct sigaction SIGINT_action = {0};
+			if(bckProc){	
+				SIGINT_action.sa_handler = SIG_IGN;
+			} else {
+				SIGINT_action.sa_handler = SIG_DFL;
+			}
+			sigfillset(&SIGINT_action.sa_mask);
+			SIGINT_action.sa_flags = 0;	
+			sigaction(SIGINT, &SIGINT_action, NULL);
 			int i_out = -1; // Will store the location of output redirection.
 			int i_in = -1; // Will store the location of input redirection.
 
