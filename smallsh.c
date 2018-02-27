@@ -303,19 +303,22 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 
 				// Is the last argument &.
 				if(strcmp(args[i], "&") == 0 && args[i+1] == '\0') {
-					
+					// Make stdout, sterr, and stdin all point to null.
+					freopen("/dev/null", "w", stdout);
+ 					freopen("/dev/null", "w", stderr);
+ 					freopen("/dev/null", "r", stdin);
 					// Open input file.
-					int sourceFD = open("/dev/null", O_RDONLY);
-					if (sourceFD == -1) { perror("open()"); exit(1); }
+					//int sourceFD = open("/dev/null", O_RDONLY);
+					//if (sourceFD == -1) { perror("open()"); exit(1); }
 					// Redirect input.
-					int result = dup2(sourceFD, 0);
-					if (result == -1) { perror("dup2"); exit(2); }
+					//int result = dup2(sourceFD, 0);
+					//if (result == -1) { perror("dup2"); exit(2); }
 					// Open output file.
-					int targetFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-					if (targetFD == -1) { perror("open()"); exit(1); }
+					//int targetFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+					//if (targetFD == -1) { perror("open()"); exit(1); }
 					// Redirect output.
-					result = dup2(targetFD, 0);
-					if (result == -1) { perror("dup2"); exit(2); }
+					//result = dup2(targetFD, 0);
+					//if (result == -1) { perror("dup2"); exit(2); }
 					bckProc = 1; // Let us know that this is a background process.
 					args[i] = '\0'; // Don't pass & to exe.	
 					break;
