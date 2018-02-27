@@ -13,13 +13,20 @@
 
 int main (int argc, char **argvi) {
 
-	// Setup signal structs.
+	// Setup signal handling.
 	struct sigaction SIGINT_action = {0}, SIGTSTP_action = {0};	
 
 	SIGINT_action.sa_handler = catchSIGINT;
 	sigfillset(&SIGINT_action.sa_mask);
 	SIGINT_action.sa_flags = 0;	
-
+	
+	SIGTSTP_action.sa_handler = catchSIGTSTP;
+	sigfillset(&SIGTSTP_action.sa_mask);
+	SIGTSTP_action.sa_flags = 0;	
+	
+	sigaction(SIGINT, &SIGINT_action, NULL);
+	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
+	
 	// Buffer info.
 	char *buffer;
 	size_t bufSize = MAX_CHARS;
@@ -333,13 +340,25 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 
 }
 
-// This function handles an interupt signal.
+// This function handles interrupt signals.
 //
 // Input:
 // 1: The signal number.
 void catchSIGINT(int signo) {
 	
 	char* message = "Caught SIGINT, sleeping for 5 seconds\n";
+	write(STDOUT_FILENO, message, 38);
+	sleep(5);
+
+}
+
+// This function handles terminal stop signals.
+//
+// Input:
+// 1: The signal number.
+void catchSIGTSTP(int signo) {
+	
+	char* message = "Caught SIGTSTP, sleeping for 5 seconds\n";
 	write(STDOUT_FILENO, message, 38);
 	sleep(5);
 
