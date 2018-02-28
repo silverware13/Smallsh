@@ -21,6 +21,9 @@
 #include <signal.h>
 #include <fcntl.h>
 
+// Global variable that tracks state of foreground mode.
+int frgMode = 0;
+
 // Waits for and does basic validation of user input.
 int userInput(char*, size_t, char**);
 

@@ -55,16 +55,26 @@ int main (int argc, char **argvi) {
 
 	// Loop until we exit manualy.
 	while(1){ 
-		
-		// Check if a background process has exited.	
+
+		// Check if any background process has exited.	
 		childPID = waitpid(-1, &childExitMethod, WNOHANG);
 		if(childPID > 0){
-			printf("Background process id: %d. Exit status.\n", childPID); fflush(stdout);
+			
+			printf("Background pid %d is done: ", childPID); fflush(stdout);
+			
+			// Check if exited normally or terminated by signal.	
+			if(WIFEXITED(childExitMethod)) { 
+				int exitStat = WEXITSTATUS(childExitMethod);
+				printf("exit value %d\n", exitStat); fflush(stdout);	
+			} else {
+				int termSig = WTERMSIG(childExitMethod);
+				printf("terminated by signal %d\n", termSig); fflush(stdout);
+			}		
 		}
-		
+
 		// Get user input.
 		validComm = userInput(buffer, bufSize, args);	
-	
+		
 		// Perform command if a valid command was given.
 		if(validComm == 1) {
 			perfComm(args, &lastPID, &lastExit);
@@ -91,11 +101,17 @@ int main (int argc, char **argvi) {
 // otherwise returns 1.
 int userInput(char *buffer, size_t bufSize, char **args) {
 
+	// Clear input first.
+	clearerr(stdin);
+	memset(args, '\0', MAX_ARGS * sizeof(char*));		
+	memset(buffer, '\0', bufSize * sizeof(char));
+
 	// Show prompt.
 	printf(":"); fflush(stdout);
-		
+			
 	// Get user input as a string.
-	getline(&buffer, &bufSize, stdin);
+	int numChars = getline(&buffer, &bufSize, stdin);
+	if(numChars == -1) {clearerr(stdin);} // If we have an error with getline clear buffer. 
 
 	// Clear new lines from our string.
 	strtok(buffer, "\n");		
@@ -121,8 +137,6 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 	// Otherwise we store the arguments in an array.
 	if(buffer[0] != '#' && emptyEnter == 0){	
 			
-		// Make sure arguments start as null.
-		memset(args, '\0', MAX_ARGS * sizeof(char*));		
 		char* word;
 
 		// Get the command.
@@ -252,7 +266,7 @@ void smallStatus(char **args, pid_t *lastPID, int *lastExit) {
 	if(*lastPID == 0){
 		printf("No foreground processes have terminated.\n"); fflush(stdout);
 					
-		// Check if exited normally or terminated by signal.	
+	// Check if exited normally or terminated by signal.	
 	} else if(WIFEXITED(*lastExit)) { 
 		int exitStat = WEXITSTATUS(*lastExit);
 		printf("exit value %d\n", exitStat); fflush(stdout);	
@@ -301,27 +315,21 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 					break;
 				}	
 
-				// Is the last argument &.
+				// If the last argument is &, this is a background process.
 				if(strcmp(args[i], "&") == 0 && args[i+1] == '\0') {
-					// Make stdout, sterr, and stdin all point to null.
-					freopen("/dev/null", "w", stdout);
- 					freopen("/dev/null", "w", stderr);
- 					freopen("/dev/null", "r", stdin);
-					// Open input file.
-					//int sourceFD = open("/dev/null", O_RDONLY);
-					//if (sourceFD == -1) { perror("open()"); exit(1); }
-					// Redirect input.
-					//int result = dup2(sourceFD, 0);
-					//if (result == -1) { perror("dup2"); exit(2); }
-					// Open output file.
-					//int targetFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-					//if (targetFD == -1) { perror("open()"); exit(1); }
-					// Redirect output.
-					//result = dup2(targetFD, 0);
-					//if (result == -1) { perror("dup2"); exit(2); }
-					bckProc = 1; // Let us know that this is a background process.
+					
+					// If in foreground only mode ignore &.	
+					if(frgMode == 0){
+						// Make stdout, sterr, and stdin all point to null.
+						freopen("/dev/null", "w", stdout);
+ 						freopen("/dev/null", "w", stderr);
+ 						freopen("/dev/null", "r", stdin);
+						bckProc = 1; // Let us know that this is a background process.
+					}
+					
 					args[i] = '\0'; // Don't pass & to exe.	
 					break;
+					
 				}
 			}
 			 
@@ -332,8 +340,6 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			} else {
 				SIGINT_action.sa_handler = SIG_DFL;
 			}
-			sigfillset(&SIGINT_action.sa_mask);
-			SIGINT_action.sa_flags = 0;	
 			sigaction(SIGINT, &SIGINT_action, NULL);
 			int i_out = -1; // Will store the location of output redirection.
 			int i_in = -1; // Will store the location of input redirection.
@@ -388,7 +394,7 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 		
 			// Check to see we just forked a background process.
 			int bckgrnd = 0;
-			for(int i = 0; i < MAX_ARGS; i++) {
+			for(int i = 0; i < MAX_ARGS && frgMode == 0; i++) {
 				// If the next argument is NULL break.
 				if( args[i] == '\0') {
 					break;
@@ -406,7 +412,7 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			
 			// we don't wait for background processes.
 			} else {
-				printf("Background process id: %d\n", spawnPID); fflush(stdout);
+				printf("Background pid is %d\n", spawnPID); fflush(stdout);
 			}	
 			break;
 
@@ -422,9 +428,8 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 // 1: The signal number.
 void catchSIGINT(int signo) {
 	
-	// We should just ignore this signal for the shell.
-	//char* message = "Caught SIGINT, sleeping for 5 seconds\n";
-	//write(STDOUT_FILENO, message, 38);
+	char* message = "SIGINT ";
+	write(STDOUT_FILENO, message, 7);
 
 }
 
@@ -433,9 +438,17 @@ void catchSIGINT(int signo) {
 // Input:
 // 1: The signal number.
 void catchSIGTSTP(int signo) {
-	
-	char* message = "Caught SIGTSTP, sleeping for 5 seconds\n";
-	write(STDOUT_FILENO, message, 39);
+
+	// Switch between foreground only mode on use.	
+	if(frgMode){
+		char* frgOff = "Exiting foreground-only mode\n";
+		write(STDOUT_FILENO, frgOff, 29);	
+		frgMode = 0;
+	} else {
+		char* frgOn = "Entering foreground-only mode (& is now ignored)\n";
+		write(STDOUT_FILENO, frgOn, 49);	
+		frgMode = 1;
+	}
 
 }
 
@@ -444,25 +457,14 @@ void catchSIGTSTP(int signo) {
 // Input:
 // 1: The signal number.
 void catchSIGCHLD(int signo) {
-
+	
 	// Get info about termination and clean up child.	
 	pid_t childPID;
 	int childExitMethod;
-
+ 
 	// We use a while loop incase multiple children exit at the same time.	
-	//while ((childPID = waitpid(-1, &childExitMethod, WNOHANG)) != -1)
-	childPID = waitpid(-1, &childExitMethod, WNOHANG);
-	if(childPID != -1){
-		// Make sure the child was killed by a signal.
-		//if(WIFSIGNALED(childExitMethod)) {
-		
-			//int termSig = WTERMSIG(childExitMethod); // We find the signal that killed.
-		
-			// If the killer signal was 2, display that info.
-			//if(termSig) {
-				char* message = "terminated by signal 2\n";
-				write(STDOUT_FILENO, message, 23);
-			//}
-		//}
+        while ((childPID = waitpid(-1, &childExitMethod, WNOHANG)) > 0) {
+		char* message = "terminated by signal 2\n";
+		write(STDOUT_FILENO, message, 23);
 	}
 }
