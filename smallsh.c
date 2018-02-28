@@ -14,7 +14,7 @@
 int main (int argc, char **argvi) {
 
 	// Setup signal handling.
-	struct sigaction SIGINT_action = {0}, SIGTSTP_action = {0}, SIGCHLD_action = {0};	
+	struct sigaction SIGINT_action = {0}, SIGTSTP_action = {0}, SIGQUIT_action = {0}, SIGCHLD_action = {0};	
 
 	// Set values for SIGINT handling.
 	SIGINT_action.sa_handler = catchSIGINT;
@@ -31,8 +31,12 @@ int main (int argc, char **argvi) {
 	sigfillset(&SIGCHLD_action.sa_mask);
 	SIGCHLD_action.sa_flags = 0;	
 	
+	// Set values for SIGQUIT handling.
+	SIGQUIT_action.sa_handler = SIG_IGN;
+	
 	sigaction(SIGINT, &SIGINT_action, NULL);
 	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
+	sigaction(SIGQUIT, &SIGQUIT_action, NULL);
 	//sigaction(SIGCHLD, &SIGCHLD_action, NULL);
 	
 	// Buffer info.
@@ -222,7 +226,12 @@ void perfComm(char **args, pid_t *lastPID, int *lastExit) {
 // Terminate all children and exit the process.
 void smallExit() {
 
-	// Terminate any process we started.
+	// Terminate all children before we exit.
+	// We send the SIGQUIT signal to parent
+	// who ignores it, but children die to it.
+	pid_t parent_pid;
+	parent_pid = getpid();
+	kill(-parent_pid, SIGQUIT);
 	exit(0);
 
 }
@@ -334,13 +343,19 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			}
 			 
 			// Set SIGINT handling to default or ignore if background process.	
-			struct sigaction SIGINT_action = {0};
+			struct sigaction SIGINT_action = {0}, SIGQUIT_action = {0};
 			if(bckProc){	
 				SIGINT_action.sa_handler = SIG_IGN;
 			} else {
 				SIGINT_action.sa_handler = SIG_DFL;
 			}
 			sigaction(SIGINT, &SIGINT_action, NULL);
+			
+			// SIGQUIT should always kill children.
+			SIGQUIT_action.sa_handler = SIG_DFL;
+			sigaction(SIGQUIT, &SIGQUIT_action, NULL);
+
+
 			int i_out = -1; // Will store the location of output redirection.
 			int i_in = -1; // Will store the location of input redirection.
 
@@ -427,9 +442,8 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 // Input:
 // 1: The signal number.
 void catchSIGINT(int signo) {
-	
-	char* message = "SIGINT ";
-	write(STDOUT_FILENO, message, 7);
+
+	// Don't do anything.	
 
 }
 
