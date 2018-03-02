@@ -294,6 +294,31 @@ void smallStatus(char **args, pid_t *lastPID, int *lastExit) {
 // 3: Exit status or terminating signal of last process that terminated.
 void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 
+	// Check to see if this will be a background process.
+	// Don't allow background process if we are in foreground only mode.
+	int bckProc = 0;
+	for(int i = 0; i < MAX_ARGS && frgMode == 0; i++) {
+				
+		// If the next argument is NULL break.
+		if( args[i] == '\0') {
+			break;
+		}	
+
+		// If the last argument is &, this is a background process.
+		if(strcmp(args[i], "&") == 0 && args[i+1] == '\0') {
+				
+			// If in foreground only mode ignore &.	
+			if(frgMode == 0){
+				bckProc = 1; // Let us know that this is a background process.
+			}
+			
+			args[i] = '\0'; // Don't pass & to exe.	
+			break;
+				
+		}
+	}
+
+	// Prepare to fork.
 	pid_t spawnPID = -5;
 	int childExitMethod = -5;
 				
@@ -314,37 +339,17 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			
 		// This process is the child, execute command.
 		case 0: {
-		
-			// Check to see if this is a background process.
-			int bckProc = 0;
-			for(int i = 0; i < MAX_ARGS; i++) {
-				
-				// If the next argument is NULL break.
-				if( args[i] == '\0') {
-					break;
-				}	
-
-				// If the last argument is &, this is a background process.
-				if(strcmp(args[i], "&") == 0 && args[i+1] == '\0') {
-					
-					// If in foreground only mode ignore &.	
-					if(frgMode == 0){
-						// Make stdout, sterr, and stdin all point to null.
-						freopen("/dev/null", "w", stdout);
- 						freopen("/dev/null", "w", stderr);
- 						freopen("/dev/null", "r", stdin);
-						bckProc = 1; // Let us know that this is a background process.
-					}
-					
-					args[i] = '\0'; // Don't pass & to exe.	
-					break;
-					
-				}
+			
+			// Make stdout, sterr, and stdin all point to null if this is a background process.
+			if(bckProc) {
+				freopen("/dev/null", "w", stdout);
+ 				freopen("/dev/null", "w", stderr);
+	 			freopen("/dev/null", "r", stdin);
 			}
-			 
+
 			// Set SIGINT handling to default or ignore if background process.	
 			struct sigaction SIGINT_action = {0}, SIGQUIT_action = {0};
-			if(bckProc){	
+			if(bckProc) {	
 				SIGINT_action.sa_handler = SIG_IGN;
 			} else {
 				SIGINT_action.sa_handler = SIG_DFL;
@@ -354,7 +359,6 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			// SIGQUIT should always kill children.
 			SIGQUIT_action.sa_handler = SIG_DFL;
 			sigaction(SIGQUIT, &SIGQUIT_action, NULL);
-
 
 			int i_out = -1; // Will store the location of output redirection.
 			int i_in = -1; // Will store the location of input redirection.
@@ -375,7 +379,7 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 					// Redirect output.
 					int result = dup2(targetFD, 1);
 					if (result == -1) { perror("dup2"); exit(2); }
-					// Set the redirect argument to NULL so we can pass args to exe.
+					// Get ready to set the redirect argument to NULL so we can pass args to exe.
 					i_out = i;
 				}
 				
@@ -387,12 +391,11 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 					// Redirect input.
 					int result = dup2(sourceFD, 0);
 					if (result == -1) { perror("dup2"); exit(2); }
-					// Set the redirect argument to NULL so we can pass args to exe.
 					i_in = i;
-				}
+				}	
 
-			}			
-
+			}	
+			
 			// Check if we used redirection, if we did prevent it from being passed to our execute.
 			if(i_out != -1){ args[i_out] = '\0'; }
 			if(i_in != -1){ args[i_in] = '\0'; }
@@ -407,24 +410,16 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 		// This is the parent, wait for child to finish.
 		default: {
 		
-			// Check to see we just forked a background process.
-			int bckgrnd = 0;
-			for(int i = 0; i < MAX_ARGS && frgMode == 0; i++) {
-				// If the next argument is NULL break.
-				if( args[i] == '\0') {
-					break;
-				}	
-				// Is the last argument &.
-				if(strcmp(args[i], "&") == 0 && args[i+1] == '\0') {
-					bckgrnd = 1;
-					sleep(1);
-				}
-			}
-			
 			// We wait for foreground processes.
-			if(bckgrnd == 0){
+			if(bckProc == 0){
 				*lastPID = waitpid(spawnPID, &childExitMethod, 0); // Wait for child.
 				*lastExit = childExitMethod; // Save the exit info from last process.
+				
+				// Make sure that a signal  didn't terminate this process, if it did display signal.
+				if(WEXITSTATUS(*lastExit)) {
+					int termSig = WTERMSIG(*lastExit);
+					printf("terminated by signal %d\n", termSig); fflush(stdout);
+				}
 			
 			// we don't wait for background processes.
 			} else {
