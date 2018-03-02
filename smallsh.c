@@ -417,6 +417,7 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 				// Is the last argument &.
 				if(strcmp(args[i], "&") == 0 && args[i+1] == '\0') {
 					bckgrnd = 1;
+					sleep(1);
 				}
 			}
 			
