@@ -9,7 +9,6 @@
 // Date: 2/14/2018
 //
 
-char *replace_str(char *str, char *sub, char *rep);
 #include "smallsh.h"
 
 int main (int argc, char **argvi) {
@@ -115,7 +114,7 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 	memset(buffer, '\0', bufSize * sizeof(char));
 
 	// Show prompt.
-	printf(":"); fflush(stdout);
+	printf(": "); fflush(stdout);
 			
 	// Get user input as a string.
 	int numChars = getline(&buffer, &bufSize, stdin);
@@ -238,7 +237,7 @@ void smallExit() {
 	int childExitMethod = -5;
 	parent_pid = getpid();
 	kill(-parent_pid, SIGQUIT);
-	while(waitpid(-1, &childExitMethod, WNOHANG) > 0); // Kill zombies until there are none left.
+	while(waitpid(-1, &childExitMethod, WNOHANG) > 0); // Reap zombies until there are none left.
 	exit(0);
 
 }
@@ -422,7 +421,10 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 					
 		// This is the parent, wait for child to finish.
 		default: {
-		
+	
+			// Give our a child a moment to start execution.
+			usleep(50000);
+	
 			// We wait for foreground processes.
 			if(bckProc == 0){
 
