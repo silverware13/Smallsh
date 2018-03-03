@@ -14,25 +14,16 @@
 int main (int argc, char **argvi) {
 
 	// Setup signal handling.
-	struct sigaction SIGINT_action = {0}, SIGTSTP_action = {0}, SIGQUIT_action = {0}, SIGCHLD_action = {0};	
+	struct sigaction SIGINT_action = {0}, SIGQUIT_action = {0}, SIGTSTP_action = {0};	
 
-	// Set values for SIGINT handling.
-	SIGINT_action.sa_handler = catchSIGINT;
-	sigfillset(&SIGINT_action.sa_mask);
-	SIGINT_action.sa_flags = SA_RESTART; // Cause interruptible functions to restart.	
+	// Ignore SIGINT and SIGQUIT signals.
+	SIGINT_action.sa_handler = SIG_IGN;
+	SIGQUIT_action.sa_handler = SIG_IGN;
 	
 	// Set values for SIGSTP handling.
 	SIGTSTP_action.sa_handler = catchSIGTSTP;
 	sigfillset(&SIGTSTP_action.sa_mask);
 	SIGTSTP_action.sa_flags = 0;	
-	
-	// Set values for SIGCHLD handling.
-	SIGCHLD_action.sa_handler = catchSIGCHLD;
-	sigfillset(&SIGCHLD_action.sa_mask);
-	SIGCHLD_action.sa_flags = 0;	
-	
-	// Set values for SIGQUIT handling.
-	SIGQUIT_action.sa_handler = SIG_IGN;
 	
 	sigaction(SIGINT, &SIGINT_action, NULL);
 	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
@@ -56,8 +47,21 @@ int main (int argc, char **argvi) {
 	// Lets us know if the given command is valid.
 	int validComm;	
 
-	// Loop until we exit manualy.
+	// Loop until we exit the shell.
 	while(1){ 
+		
+		// Check if the we have just changed foreground modes, if so show message.
+		if(frgMode) {
+			if(!lstMode) {
+				lstMode = 1; // Our last mode is now the current mode.
+				printf("\nEntering foreground-only mode (& is now ignored)\n");
+			}
+		} else {
+			if(lstMode) {
+				lstMode = 0; // Our last mode is now the current mode.
+				printf("\nExiting foreground-only mode\n");
+			}
+		}
 
 		// Check if any background process has exited.	
 		childPID = waitpid(-1, &childExitMethod, WNOHANG);
@@ -453,12 +457,8 @@ void catchSIGTSTP(int signo) {
 
 	// Switch between foreground only mode on use.	
 	if(frgMode){
-		char* frgOff = "Exiting foreground-only mode\n";
-		write(STDOUT_FILENO, frgOff, 29);	
 		frgMode = 0;
 	} else {
-		char* frgOn = "Entering foreground-only mode (& is now ignored)\n";
-		write(STDOUT_FILENO, frgOn, 49);	
 		frgMode = 1;
 	}
 
