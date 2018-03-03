@@ -9,6 +9,7 @@
 // Date: 2/14/2018
 //
 
+char *replace_str(char *str, char *sub, char *rep);
 #include "smallsh.h"
 
 int main (int argc, char **argvi) {
@@ -144,9 +145,8 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 	// Otherwise we store the arguments in an array.
 	if(buffer[0] != '#' && emptyEnter == 0){	
 			
-		char* word;
-
 		// Get the command.
+		char* word;
 		word = strtok(buffer, " ");
 
 		// Variables to expand $$.
@@ -162,7 +162,7 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 			word = strtok(NULL, " ");
 			
 			// If we find a $$ we replace it with the process id.
-			if(strstr(args[i], "$$") != NULL){
+			while(strstr(args[i], "$$") != NULL){
 
 				// We get the location of the first char of $$
 				// in our current argument.
@@ -173,7 +173,8 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 				// and the last half of the string back into our temp buffer,
 				// lastley we copy it back into our current argument.
 				strncpy(tempBuff, args[i], ptrExp - args[i]);
-				sprintf(tempBuff+(ptrExp - args[i]), "%d%s", curPID, ptrExp+2);
+				tempBuff[ptrExp - args[i]] = '\0';
+				sprintf(tempBuff+(ptrExp - args[i]), "%d%s\0", curPID, ptrExp+2);
 				strcpy(args[i],tempBuff);
 
 			}
