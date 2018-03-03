@@ -21,8 +21,9 @@
 #include <signal.h>
 #include <fcntl.h>
 
-// Global variable that tracks state of foreground mode.
+// Global variables that tracks state of foreground mode.
 int frgMode = 0;
+int lstMode = 0;
 
 // Waits for and does basic validation of user input.
 int userInput(char*, size_t, char**);
@@ -42,11 +43,5 @@ void smallStatus(char**, pid_t*, int*);
 // Forks and then executes a given command.
 void forkExe(char**, pid_t*, int*);
 
-// This function handles interrupt signals.
-void catchSIGINT(int);
-
 // This function handles terminal stop signals.
 void catchSIGTSTP(int);
-
-// This function handles child terminating signals.
-void catchSIGCHLD(int);

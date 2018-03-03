@@ -37,7 +37,6 @@ int main (int argc, char **argvi) {
 	sigaction(SIGINT, &SIGINT_action, NULL);
 	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 	sigaction(SIGQUIT, &SIGQUIT_action, NULL);
-	//sigaction(SIGCHLD, &SIGCHLD_action, NULL);
 	
 	// Buffer info.
 	char *buffer;
@@ -229,9 +228,12 @@ void smallExit() {
 	// Terminate all children before we exit.
 	// We send the SIGQUIT signal to parent
 	// who ignores it, but children die to it.
+	// Lastly we reap children with waitpid.
 	pid_t parent_pid;
+	int childExitMethod = -5;
 	parent_pid = getpid();
 	kill(-parent_pid, SIGQUIT);
+	while(waitpid(-1, &childExitMethod, WNOHANG) > 0); // Kill zombies until there are none left.
 	exit(0);
 
 }
@@ -295,9 +297,8 @@ void smallStatus(char **args, pid_t *lastPID, int *lastExit) {
 void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 
 	// Check to see if this will be a background process.
-	// Don't allow background process if we are in foreground only mode.
 	int bckProc = 0;
-	for(int i = 0; i < MAX_ARGS && frgMode == 0; i++) {
+	for(int i = 0; i < MAX_ARGS; i++) {
 				
 		// If the next argument is NULL break.
 		if( args[i] == '\0') {
@@ -317,6 +318,9 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 				
 		}
 	}
+	
+	// Don't allow background process if we are in foreground only mode.
+	if( frgMode == 1 ) { bckProc = 0;}
 
 	// Prepare to fork.
 	pid_t spawnPID = -5;
@@ -348,12 +352,14 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			}
 
 			// Set SIGINT handling to default or ignore if background process.	
-			struct sigaction SIGINT_action = {0}, SIGQUIT_action = {0};
+			struct sigaction SIGINT_action = {0}, SIGTSTP_action = {0}, SIGQUIT_action = {0};
 			if(bckProc) {	
 				SIGINT_action.sa_handler = SIG_IGN;
 			} else {
 				SIGINT_action.sa_handler = SIG_DFL;
 			}
+			SIGTSTP_action.sa_handler = SIG_IGN; // Don't let SIGTSTP kill children.
+			sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 			sigaction(SIGINT, &SIGINT_action, NULL);
 			
 			// SIGQUIT should always kill children.
@@ -412,12 +418,18 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 		
 			// We wait for foreground processes.
 			if(bckProc == 0){
-				*lastPID = waitpid(spawnPID, &childExitMethod, 0); // Wait for child.
+
+				// Wait for child, if interrupted, try again. 
+				do{
+					clearerr(stdin);
+					*lastPID = waitpid(spawnPID, &childExitMethod, 0);
+				} while( *lastPID == -1 );
+
 				*lastExit = childExitMethod; // Save the exit info from last process.
-				
-				// Make sure that a signal  didn't terminate this process, if it did display signal.
-				if(WEXITSTATUS(*lastExit)) {
-					int termSig = WTERMSIG(*lastExit);
+			
+				// Make sure that a signal didn't terminate this process, if it did display signal.
+				if(WIFSIGNALED(childExitMethod)){
+					int termSig = WTERMSIG(childExitMethod);
 					printf("terminated by signal %d\n", termSig); fflush(stdout);
 				}
 			
@@ -430,16 +442,6 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 		}
 
 	}
-
-}
-
-// This function handles interrupt signals.
-//
-// Input:
-// 1: The signal number.
-void catchSIGINT(int signo) {
-
-	// Don't do anything.	
 
 }
 
@@ -460,21 +462,4 @@ void catchSIGTSTP(int signo) {
 		frgMode = 1;
 	}
 
-}
-
-// This function handles child terminating signals.
-//
-// Input:
-// 1: The signal number.
-void catchSIGCHLD(int signo) {
-	
-	// Get info about termination and clean up child.	
-	pid_t childPID;
-	int childExitMethod;
- 
-	// We use a while loop incase multiple children exit at the same time.	
-        while ((childPID = waitpid(-1, &childExitMethod, WNOHANG)) > 0) {
-		char* message = "terminated by signal 2\n";
-		write(STDOUT_FILENO, message, 23);
-	}
 }
