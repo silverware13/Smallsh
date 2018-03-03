@@ -125,8 +125,8 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 	strtok(buffer, "\n");		
 	
 	// Check if input is just whitespace.
-	int emptyEnter = 1;
-	for(int i = 0; i < MAX_CHARS; i++) {
+	int emptyEnter = 1, i;
+	for(i = 0; i < MAX_CHARS; i++) {
 				
 		// Check for non-white space chars.
 		if( buffer[i] != ' ' && buffer[i] != '\t' && buffer[i] != '\0' && buffer[i] != '\n' ){
@@ -145,40 +145,40 @@ int userInput(char *buffer, size_t bufSize, char **args) {
 	// Otherwise we store the arguments in an array.
 	if(buffer[0] != '#' && emptyEnter == 0){	
 			
-		// Get the command.
-		char* word;
-		word = strtok(buffer, " ");
 
 		// Variables to expand $$.
 		int curPID = getpid(); // Holds the current process id.
 		char tempBuff[MAX_CHARS]; // Holds expanded argument.
 		char* ptrExp; // Points to any instance of $$ in input.
+			
+		// If we find a $$ we replace it with the process id.
+		while(strstr(buffer, "$$") != NULL) {
 
-		// Get the arguments.
-		for(int i = 0; word != NULL; i++) {
+			// We get the location of a "$$" string.
+			ptrExp = strstr(buffer, "$$");
+			
+			// We start by copying just the string before $$ into
+			// our temp buffer, then we add the current process id
+			// and the last half of the string back into our temp buffer,
+			// lastley we copy it back into our original buffer.
+			strncpy(tempBuff, buffer, ptrExp - buffer);
+			tempBuff[ptrExp - buffer] = '\0';
+			sprintf(tempBuff+(ptrExp - buffer), "%d%s\0", curPID, ptrExp+2);
+			strcpy(buffer, tempBuff);
+
+		}
+
+		// Divide the buffer into arguments.
+		int i;
+		char* word;
+		word = strtok(buffer, " ");
+		
+		for(i = 0; word != NULL; i++) {
 			
 			// Store arguments in array.
 			args[i] = word;
 			word = strtok(NULL, " ");
 			
-			// If we find a $$ we replace it with the process id.
-			while(strstr(args[i], "$$") != NULL){
-
-				// We get the location of the first char of $$
-				// in our current argument.
-				ptrExp = strstr(args[i], "$$");
-			
-				// We start by copying just the string before $$ into
-				// our temp buffer, then we add the current process id
-				// and the last half of the string back into our temp buffer,
-				// lastley we copy it back into our current argument.
-				strncpy(tempBuff, args[i], ptrExp - args[i]);
-				tempBuff[ptrExp - args[i]] = '\0';
-				sprintf(tempBuff+(ptrExp - args[i]), "%d%s\0", curPID, ptrExp+2);
-				strcpy(args[i],tempBuff);
-
-			}
-
 		}
 		
 		// We have recevied a command
@@ -302,8 +302,8 @@ void smallStatus(char **args, pid_t *lastPID, int *lastExit) {
 void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 
 	// Check to see if this will be a background process.
-	int bckProc = 0;
-	for(int i = 0; i < MAX_ARGS; i++) {
+	int bckProc = 0, i;
+	for(i = 0; i < MAX_ARGS; i++) {
 				
 		// If the next argument is NULL break.
 		if( args[i] == '\0') {
@@ -375,7 +375,8 @@ void forkExe(char **args, pid_t *lastPID, int *lastExit) {
 			int i_in = -1; // Will store the location of input redirection.
 
 			// We look through arguments for an input/output redirect.
-			for(int i = 0; i < MAX_ARGS; i++) {
+			int i;
+			for(i = 0; i < MAX_ARGS; i++) {
 			        
 				// If the next argument is NULL break.
 				if( args[i] == '\0') {
