@@ -233,11 +233,13 @@ void smallExit() {
 	// We send the SIGQUIT signal to parent
 	// who ignores it, but children die to it.
 	// Lastly we reap children with waitpid.
-	pid_t parent_pid;
+	pid_t parentPID, childPID;
 	int childExitMethod = -5;
-	parent_pid = getpid();
-	kill(-parent_pid, SIGQUIT);
-	while(waitpid(-1, &childExitMethod, WNOHANG) > 0); // Reap zombies until there are none left.
+	parentPID = getpid();
+	kill(-parentPID, SIGQUIT); // Kill all children.
+	usleep(50000); // Wait a moment for children to die.
+	// Reap children.
+	while((childPID = waitpid(-1, &childExitMethod, WNOHANG)) > 0);
 	exit(0);
 
 }
